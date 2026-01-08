@@ -1,0 +1,1 @@
+# Dependências da Lambda ingest (vazio por enquanto)
