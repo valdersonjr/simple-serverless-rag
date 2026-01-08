@@ -247,3 +247,9 @@ $RECYCLE.BIN/
 # Generated build artifacts (should not be committed)
 .aws-sam/
 .sam/
+
+# Log local de passos do desenvolvimento (não versionar)
+.dev-steps.local.md
+
+# SAM local env vars (não versionar)
+env.json

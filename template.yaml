@@ -30,11 +30,16 @@ Resources:
   IngestFunction:
     Type: AWS::Serverless::Function
     Properties:
+      Timeout: 30
       CodeUri: ingest/
       Handler: app.lambda_handler
       Runtime: python3.12
       Architectures:
         - x86_64
+      Environment:
+        Variables:
+          OPENSEARCH_ENDPOINT: ''
+          OPENSEARCH_INDEX: rag_chunks
       Events:
         Ingest:
           Type: Api
