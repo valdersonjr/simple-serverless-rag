@@ -40,6 +40,8 @@ Resources:
         Variables:
           OPENSEARCH_ENDPOINT: ''
           OPENSEARCH_INDEX: rag_chunks
+          BEDROCK_EMBEDDING_MODEL_ID: ""
+          BEDROCK_EMBEDDING_DIM: "1024"
       Events:
         Ingest:
           Type: Api
