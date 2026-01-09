@@ -65,6 +65,7 @@ def index_mapping() -> dict:
         dims = int(os.environ.get("BEDROCK_EMBEDDING_DIM", "1024"))
     except Exception:
         dims = 1024
+
     return {
         "settings": {"index": {"knn": True}},
         "mappings": {
@@ -99,34 +100,6 @@ def ensure_index(endpoint: str, index: str) -> None:
         raise RuntimeError(f"Falha ao criar índice: HTTP {status}: {resp}")
 
 
-def delete_index(endpoint: str, index: str) -> dict:
-    status, resp = aoss_request("DELETE", endpoint, f"/{index}")
-    # OpenSearch pode retornar 200/202 ao deletar, 404 se não existir
-    if status in (200, 202):
-        return {"deleted": True, "status": status}
-    if status == 404:
-        return {"deleted": False, "status": status, "reason": "index_not_found"}
-    raise RuntimeError(f"Falha ao deletar índice: HTTP {status}: {resp}")
-
-
-def reset_index(endpoint: str, index: str) -> dict:
-    deleted = delete_index(endpoint, index)
-    # recria sempre
-    body = json.dumps(index_mapping()).encode("utf-8")
-    status, resp = aoss_request(
-        "PUT",
-        endpoint,
-        f"/{index}",
-        body=body,
-        headers={"content-type": "application/json"},
-    )
-    if status not in (200, 201):
-        raise RuntimeError(f"Falha ao recriar índice: HTTP {status}: {resp}")
-    return {"reset": True, "delete": deleted, "create_status": status}
-
-
-
-
 def delete_by_doc_id(endpoint: str, index: str, doc_id: str) -> dict:
     # Apaga todos os documentos do índice relacionados a um doc_id (evita duplicação em reindex).
     body = json.dumps({"query": {"term": {"doc_id": doc_id}}}).encode("utf-8")
@@ -154,11 +127,6 @@ def delete_by_doc_id(endpoint: str, index: str, doc_id: str) -> dict:
         "timed_out": data.get("timed_out"),
         "failures": data.get("failures"),
     }
-def count_docs(endpoint: str, index: str) -> dict:
-    status, resp = aoss_request("GET", endpoint, f"/{index}/_count")
-    if status != 200:
-        raise RuntimeError(f"Falha no _count: HTTP {status}: {resp}")
-    return json.loads(resp) if resp else {}
 
 
 def build_bulk_index_ops(index: str, docs: Iterable[dict]) -> bytes:
@@ -211,3 +179,4 @@ def bulk_upsert_chunks(endpoint: str, index: str, docs: list[dict]) -> dict:
         "errors": errors,
         "errors_sample": _extract_bulk_errors(parsed, limit=5) if errors else [],
     }
+

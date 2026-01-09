@@ -4,6 +4,7 @@ version = 0.1
 
 [default.global.parameters]
 stack_name = "simple-serveless-rag"
+region = "us-east-1"
 
 [default.build.parameters]
 cached = true
@@ -16,6 +17,11 @@ lint = true
 capabilities = "CAPABILITY_IAM"
 confirm_changeset = true
 resolve_s3 = true
+s3_prefix = "simple-serveless-rag"
+region = "us-east-1"
+profile = "rag-test"
+image_repositories = []
+parameter_overrides = "OpensearchEndpoint=https://vp03ns8iv0raqull8k9.us-east-1.aoss.amazonaws.com OpensearchIndex=rag_chunks BedrockEmbeddingModelId=amazon.titan-embed-text-v2:0 BedrockEmbeddingDim=1024"
 
 [default.package.parameters]
 resolve_s3 = true

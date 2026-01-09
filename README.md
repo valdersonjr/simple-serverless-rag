@@ -1,145 +1,122 @@
-## simple-rag
+# Beginner-friendly guide — what this project is and how to use it
 
-Projeto **simples** de **RAG (Retrieval-Augmented Generation)** para permitir que usuários façam perguntas sobre **documentos proprietários** e recebam respostas **baseadas apenas nesses documentos**.
+## Project idea (vision)
 
----
+For the original project vision/spec and the planned flows, see `project_idea.md`.
 
-## Fluxo desejado
+## Proposed (abstract) architecture
 
-### Fluxo 1 — População do vetor (Ingestão)
-- Documentos/textos são enviados para uma **AWS Lambda**
-- A Lambda divide o conteúdo em **chunks** pequenos
-- Cada chunk é convertido em um **embedding**
-- Para múltiplos arquivos/chunks, o ideal é processar de forma **assíncrona** (fila + retries) e fazer **upsert por chunk** no OpenSearch
-- Embeddings (e metadados) são salvos no **Amazon OpenSearch Serverless** (vector database)
+![Abstract architecture proposal](assets/abstract-architecture.png)
 
-### Fluxo 2 — Consulta (RAG)
-- Usuário envia uma pergunta
-- A pergunta é convertida em **embedding** (mesmo modelo do Fluxo 1)
-- O sistema faz **busca por similaridade** no **Amazon OpenSearch Serverless**
-- Recupera os **chunks mais relevantes**
-- Injeta esses chunks no contexto do **LLM**
-- O LLM é instruído a responder **somente com base no contexto recuperado**
-- A resposta é retornada ao usuário
+## Status
 
----
+- **Flow 1 (Ingestion)**: ✅ implemented (API Gateway → Lambda → SQS → Worker → Bedrock embeddings → OpenSearch Serverless)
+- **Flow 2 (Query/RAG)**: 🚧 in progress (chat endpoint + retrieval + LLM answer)
 
-## Nota sobre AWS
+## What this project does (in 1 minute)
 
-Previsão de utilização:
-- **API Gateway**
-- **AWS Lambda**
-- **Amazon OpenSearch Serverless**
-- **IAM**
-- **CloudWatch**
+This project is a **RAG** (Retrieval‑Augmented Generation). In simple terms:
 
+- You **send a text/document** to the system.
+- The system **splits the text into smaller pieces** (“chunks”).
+- It turns each piece into a big “number list” (a **vector**, called an **embedding**) that represents the meaning of the text.
+- Those chunks + vectors are stored in a “smart search database” (**OpenSearch Serverless**).
 
-## O que construir:
-
-- Deve-se ter um frontend simples com duas abas: uma para o envio dos arquivos para popular o banco. a outra para o envio das perguntas e também com um lugar para receber a resposta.
-- Devemos ter também um backend simples (API) com dois endpoints:
-  - `POST /ingest`: recebe texto/arquivo, faz chunking + embedding e indexa no OpenSearch (ou enfileira para processar assíncrono)
-  - `POST /chat`: recebe a pergunta, faz embedding, busca no OpenSearch e chama o LLM para responder usando apenas o contexto retornado
-- Uma **Lambda de ingestão** e uma **Lambda de consulta** (pode ser via API Gateway)
-- Um índice no **Amazon OpenSearch Serverless** com suporte a **vector search**
-- Permissões mínimas via **IAM** (API → Lambda → OpenSearch/LLM)
-- Logs e métricas no **CloudWatch** para observar ingestões, erros e latência (por ultimo)
-
+Later (Flow 2, still in progress), you would ask questions and the system would search the most relevant chunks to answer based on them.
 
 ---
 
-## Como rodar (local)
+## How Flow 1 works (step by step)
 
-### Pré-requisitos
+When you call `POST /ingest`:
 
-- **SAM CLI** instalado
-- **Docker runtime** funcionando via **Colima** (ou Docker Desktop)
-- Credenciais AWS configuradas (ex.: `aws configure --profile rag-test`)
+1) **API Gateway** receives the HTTP request.
+2) The **`IngestFunction`** Lambda validates the JSON and places a message into a queue (**SQS**).
+3) The queue (**SQS**) stores the work and retries automatically. If it fails too many times, it goes to the **DLQ**.
+4) The **`IngestWorkerFunction`** Lambda reads the message and processes it:
+   - splits the text into chunks
+   - generates embeddings via **Bedrock**
+   - writes into **OpenSearch Serverless (AOSS)**
 
-### Container runtime (Colima)
-
-Se em um terminal novo o SAM reclamar que não acha runtime de container, configure o socket do Colima:
-
-```bash
-export DOCKER_HOST="unix:///Users/valdersonjunior/.colima/default/docker.sock"
-```
-
-### Variáveis de ambiente (env.json)
-
-Usamos `env.json` (gitignored) para passar env vars para o `sam local`.
-
-Arquivo: `env.json`
-
-Campos mais importantes:
-- **OpenSearch Serverless**:
-  - `OPENSEARCH_ENDPOINT`
-  - `OPENSEARCH_INDEX`
-- **Bedrock (embeddings)**:
-  - `BEDROCK_EMBEDDING_MODEL_ID` (ex.: `amazon.titan-embed-text-v2:0`)
-  - `BEDROCK_EMBEDDING_DIM` (ex.: `1024`)
-
-Observação:
-- O arquivo `env.json` **não vai para o git** (está no `.gitignore`).
-- **Não** comite `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`.
-
-### Build e start da API
-
-Na raiz do projeto:
-
-```bash
-sam build --use-container
-sam local start-api --env-vars env.json --profile rag-test --region us-east-1
-```
+That’s why `/ingest` responds quickly with **`status: enqueued`** (the rest happens in the background).
 
 ---
 
-## Script de ingestão (sem curl)
+## “Each part” (what each thing is)
 
-O projeto usa o script `script/call_ingest.py` para chamar o endpoint `/ingest`.
-
-### Comandos principais
-
-- **Ingest (com persistência no AOSS)**:
-
-```bash
-python3 script/call_ingest.py --doc-id bachelor-tesis --text @documents/bachelor-tesis.txt --chunk-size 800 --persist
-```
-
-Observação importante:
-- Quando `--persist` é usado, o backend força **embeddings obrigatórios** (equivalente a `embed=true`).
-
-### Flags disponíveis
-
-- **`--url`**: URL do endpoint (default: `http://127.0.0.1:3000/ingest`)
-- **`--doc-id`**: identificador do documento (recomendado)
-- **`--text`**: texto literal ou `@caminho/arquivo.txt`
-- **`--chunk-size`**: tamanho do chunk (em caracteres)
-- **`--persist`**: persiste no OpenSearch Serverless
-- **`--embed`**: força `embed=true` (observação: com `--persist`, embeddings já são obrigatórios)
-
-### Debug / Admin (via script)
-
-- **Ver env vars que a Lambda está enxergando** (sem vazar secrets):
-
-```bash
-python3 script/call_ingest.py --debug-env
-```
-
-- **Contar docs no índice** (`_count`):
-
-```bash
-python3 script/call_ingest.py --debug-count
-```
-
-- **Reset total do índice** (zera tudo e recria com mapping vetorial):
-
-```bash
-python3 script/call_ingest.py --reset-index
-```
+- **API Gateway**: the HTTP “front door” (`/ingest`).
+- **`IngestFunction` Lambda**: receives the request and **enqueues** it (does not do the heavy work).
+- **SQS (queue)**: async processing queue.
+- **DLQ**: “error queue” (messages that failed multiple times).
+- **`IngestWorkerFunction` Lambda**: does the heavy work (chunk + embedding + indexing).
+- **Bedrock**: AWS service that generates embeddings.
+- **OpenSearch Serverless (AOSS)**: stores the chunks and embeddings for search.
 
 ---
 
-## Observações sobre idempotência
+## How to use it (AWS — simplest way)
 
-- Ao persistir (`--persist`), a Lambda tenta **apagar documentos existentes daquele `doc_id`** antes de reindexar.
-- Isso evita duplicação quando você roda o ingest mais de uma vez com o mesmo `--doc-id`.
+You need to have deployed the stack and have the **`IngestApiUrl`** output.
+
+### 1) Ingest a text file
+
+Example using a simple Lorem Ipsum text:
+
+```bash
+curl -X POST "<IngestApiUrl>" \
+  -H "content-type: application/json" \
+  -d '{
+    "doc_id": "lorem-ipsum",
+    "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+    "chunk_size": 200,
+    "persist": true
+  }'
+```
+
+Expected response (example):
+
+- `status: enqueued`
+- `message_id`: the SQS message id
+
+### 2) Check if the worker processed it
+
+```bash
+sam logs -n IngestWorkerFunction --stack-name simple-serveless-rag --tail --profile rag-test --region us-east-1
+```
+
+If you see an error, it’s usually AOSS/Bedrock permissions or configuration.
+
+---
+
+## Proof it works (screenshots)
+
+### Deployment outputs (API + queues)
+
+![CloudFormation outputs (IngestApiUrl, QueueUrl, DLQUrl)](assets/deploy.png)
+
+### Worker processing logs (no errors)
+
+![IngestWorkerFunction logs (START/END/REPORT)](assets/queue-log.png)
+
+### Vector DB has documents (OpenSearch `_count`)
+
+![OpenSearch Serverless index count (_count > 0)](assets/chunk-count-vdb.png)
+
+---
+
+## What does “it worked” mean?
+
+You know Flow 1 is working when:
+
+- `POST /ingest` returns `status: enqueued`
+- the worker does not keep failing/retrying
+- you can confirm there are documents in the index (e.g. `_count > 0`)
+
+---
+
+## Common issues (simple explanations)
+
+- **Queue does not exist** (`NonExistentQueue`): the system is trying to use a queue that wasn’t created/deployed, or the queue URL is wrong.
+- **AOSS 403**: the Lambda is not allowed to access OpenSearch Serverless (you need a Data Access Policy allowing the role).
+- **SSL error in local Python**: your Python doesn’t trust the certificate; you can fix it with `certifi` (when running local commands).
+

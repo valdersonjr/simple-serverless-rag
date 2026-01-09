@@ -1,0 +1,27 @@
+[
+  {
+    "Rules": [
+      {
+        "ResourceType": "collection",
+        "Resource": ["collection/simple-rag"],
+        "Permission": ["aoss:DescribeCollectionItems"]
+      },
+      {
+        "ResourceType": "index",
+        "Resource": ["index/simple-rag/*"],
+        "Permission": [
+          "aoss:CreateIndex",
+          "aoss:DescribeIndex",
+          "aoss:UpdateIndex",
+          "aoss:DeleteIndex",
+          "aoss:ReadDocument",
+          "aoss:WriteDocument"
+        ]
+      }
+    ],
+    "Principal": [
+      "arn:aws:iam::840953833674:role/simple-serveless-rag-IngestWorkerFunctionRole-ohlvri7duX3x"
+    ]
+  }
+]
+
