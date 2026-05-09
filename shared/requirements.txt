@@ -1,0 +1,4 @@
+opensearch-py>=2.4.0
+requests
+boto3
+fastembed

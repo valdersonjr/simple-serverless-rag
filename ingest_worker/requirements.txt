@@ -1,1 +1,1 @@
-# Dependências da Lambda worker (boto3 já existe no runtime Lambda)
+# Dependencies come from the SharedLayer

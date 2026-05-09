@@ -1,8 +1,8 @@
 import json
 import os
 
-from opensearch_aoss import bulk_upsert_chunks, delete_by_doc_id, ensure_index
-from bedrock_embeddings import embed_text
+from embeddings import embed_text
+from opensearch import bulk_upsert_chunks, delete_by_doc_id, ensure_index
 
 
 def chunk_text(text: str, chunk_size: int) -> list[str]:
@@ -14,11 +14,6 @@ def chunk_text(text: str, chunk_size: int) -> list[str]:
         for i in range(0, len(text), chunk_size)
         if text[i : i + chunk_size].strip()
     ]
-
-
-def validate_env() -> None:
-    if not os.environ.get("OPENSEARCH_ENDPOINT") or not os.environ.get("OPENSEARCH_INDEX"):
-        raise RuntimeError("OPENSEARCH_ENDPOINT/OPENSEARCH_INDEX não configurados")
 
 
 def build_docs(doc_id: str, chunks: list[str], embed: bool) -> list[dict]:
@@ -48,12 +43,8 @@ def process_job(job: dict) -> dict:
     if not isinstance(text, str) or not text.strip():
         raise ValueError("job.text inválido")
 
-    # regra do projeto: se persistir, embeddings são obrigatórios
     if persist:
         embed = True
-
-    endpoint = os.environ["OPENSEARCH_ENDPOINT"]
-    index = os.environ["OPENSEARCH_INDEX"]
 
     chunks = chunk_text(text, chunk_size)
     docs = build_docs(doc_id, chunks, embed=embed)
@@ -61,12 +52,10 @@ def process_job(job: dict) -> dict:
     if not persist:
         return {"doc_id": doc_id, "persisted": False, "chunks": len(chunks), "embed": embed}
 
-    # Só precisa de OpenSearch quando persistir
-    validate_env()
-
-    ensure_index(endpoint, index)
-    clean = delete_by_doc_id(endpoint, index, doc_id)
-    result = bulk_upsert_chunks(endpoint, index, docs)
+    index = os.environ["OPENSEARCH_INDEX"]
+    ensure_index(index)
+    clean = delete_by_doc_id(index, doc_id)
+    result = bulk_upsert_chunks(index, docs)
     return {
         "doc_id": doc_id,
         "persisted": True,
@@ -78,12 +67,10 @@ def process_job(job: dict) -> dict:
 
 
 def lambda_handler(event, context):
-    # SQS event
     records = event.get("Records", [])
     out = []
     for r in records:
         body = r.get("body") or "{}"
         job = json.loads(body)
         out.append(process_job(job))
-
     return {"processed": len(out), "items": out}

@@ -1,1 +1,1 @@
-# Dependências da Lambda ingest (vazio por enquanto)
+# Dependencies come from the SharedLayer
