@@ -4,8 +4,6 @@ import os
 
 import boto3
 
-from opensearch_aoss import count_docs, reset_index
-
 sqs = boto3.client("sqs")
 
 
@@ -46,41 +44,10 @@ def get_chunk_size(payload: dict) -> int:
         raise ValueError("chunk_size deve ser um número inteiro.") from e
 
 
-def get_opensearch_config() -> tuple[str, str]:
-    endpoint = os.environ.get("OPENSEARCH_ENDPOINT")
-    index = os.environ.get("OPENSEARCH_INDEX")
-    if not endpoint or not index:
-        raise RuntimeError("OPENSEARCH_ENDPOINT/OPENSEARCH_INDEX não configurados")
-    return endpoint, index
-
-
-def debug_count() -> dict:
-    endpoint, index = get_opensearch_config()
-    data = count_docs(endpoint, index)
-    return {"index": index, **data}
-
-
-def debug_env() -> dict:
-    ak = os.environ.get("AWS_ACCESS_KEY_ID")
-    return {
-        "AWS_REGION": os.environ.get("AWS_REGION"),
-        "has_AWS_ACCESS_KEY_ID": bool(ak),
-        "AWS_ACCESS_KEY_ID_suffix": (ak[-4:] if ak else None),
-        "has_AWS_SECRET_ACCESS_KEY": bool(os.environ.get("AWS_SECRET_ACCESS_KEY")),
-        "has_AWS_SESSION_TOKEN": bool(os.environ.get("AWS_SESSION_TOKEN")),
-        "OPENSEARCH_ENDPOINT": os.environ.get("OPENSEARCH_ENDPOINT"),
-        "OPENSEARCH_INDEX": os.environ.get("OPENSEARCH_INDEX"),
-        "BEDROCK_EMBEDDING_MODEL_ID": os.environ.get("BEDROCK_EMBEDDING_MODEL_ID"),
-        "BEDROCK_EMBEDDING_DIM": os.environ.get("BEDROCK_EMBEDDING_DIM"),
-        "INGEST_QUEUE_URL": os.environ.get("INGEST_QUEUE_URL"),
-    }
-
-
 def enqueue_job(job: dict) -> dict:
     queue_url = os.environ.get("INGEST_QUEUE_URL")
     if not queue_url:
         raise RuntimeError("INGEST_QUEUE_URL não configurado")
-
     resp = sqs.send_message(
         QueueUrl=queue_url,
         MessageBody=json.dumps(job, ensure_ascii=False),
@@ -97,36 +64,10 @@ def _resp(status_code: int, body: dict) -> dict:
 
 
 def lambda_handler(event, context):
-    # POST /ingest
-    # Body JSON:
-    #   - text: string (obrigatório)
-    #   - doc_id: string (opcional, recomendado)
-    #   - chunk_size: int (opcional; padrão 800)
-    #   - persist: bool (opcional; se true, o worker indexa no AOSS)
-    #   - embed: bool (opcional; se true, o worker gera embeddings via Bedrock)
-    #   - debug: "env" | "count" | "reset-index"
-
     try:
         payload = parse_json_body(event)
     except ValueError as e:
         return _resp(400, {"error": str(e)})
-
-    if payload.get("debug") == "env":
-        return _resp(200, {"ok": True, "env": debug_env()})
-
-    if payload.get("debug") == "count":
-        try:
-            return _resp(200, {"ok": True, "count": debug_count()})
-        except Exception as e:
-            return _resp(500, {"ok": False, "error": str(e)})
-
-    if payload.get("debug") == "reset-index":
-        try:
-            endpoint, index = get_opensearch_config()
-            info = reset_index(endpoint, index)
-            return _resp(200, {"ok": True, "reset": info})
-        except Exception as e:
-            return _resp(500, {"ok": False, "error": str(e)})
 
     try:
         text = validate_text(payload)
