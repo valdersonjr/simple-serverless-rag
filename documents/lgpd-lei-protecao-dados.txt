@@ -1,0 +1,45 @@
+Lei Geral de Proteção de Dados Pessoais
+
+A Lei Geral de Proteção de Dados Pessoais, com sigla LGPD, é a Lei nº 13.709 de 2018, uma lei federal brasileira que estabelece normas para a proteção e tratamento de dados pessoais em território nacional. A legislação protege direitos fundamentais, particularmente a privacidade, a honra e a intimidade das pessoas. A LGPD também alterou artigos do Marco Civil da Internet, lei federal que traz normas sobre o uso da Internet no Brasil.
+
+Desde sua promulgação, o Brasil passou a fazer parte dos países com legislação específica para proteção de dados pessoais e privacidade dos cidadãos, em linha com o Regulamento Geral sobre a Proteção de Dados da União Europeia (GDPR) e a Lei de Privacidade do Consumidor da Califórnia (CCPA).
+
+A LGPD cria novos conceitos jurídicos como "dados pessoais sensíveis" e "tratamento de dados pessoais", estabelece as condições nas quais os dados podem ser tratados, define direitos para os titulares dos dados, gera obrigações para controladores e operadores, e cria procedimentos e normas para maior cautela no tratamento desses dados e compartilhamento com terceiros.
+
+
+Princípios da LGPD
+
+Os princípios que guiam o tratamento de dados pessoais previstos na LGPD são: boa-fé, finalidade, adequação, necessidade, livre acesso, qualidade dos dados, transparência, segurança, prevenção, não discriminação e responsabilização e prestação de contas.
+
+
+Direitos dos Titulares de Dados Pessoais
+
+Em seu artigo 18, a LGPD traz os direitos dos titulares de dados pessoais. Os titulares poderão solicitar a qualquer momento:
+
+Confirmação da existência de tratamento e acesso aos seus dados. Correção de dados incompletos, inexatos ou desatualizados. Anonimização, bloqueio ou eliminação de dados tratados em desconformidade com a lei. Portabilidade dos dados a outro fornecedor de serviço ou produto. Eliminação dos dados pessoais tratados com consentimento do titular. Informação das entidades públicas e privadas com as quais o controlador realizou uso compartilhado de dados. Informação sobre a possibilidade de não fornecer consentimento e as consequências da negativa. Revogação do consentimento. Oposição ao tratamento realizado em caso de descumprimento da lei. Revisão de decisões automatizadas.
+
+
+Bases Legais para Tratamento de Dados Pessoais
+
+A LGPD limitou taxativamente as possibilidades de tratamento de dados. Somente poderá o controlador utilizar dados pessoais com fundamento em pelo menos uma das dez bases legais, sendo obrigado a informar qual base legal utiliza para cada tratamento.
+
+As bases legais são: consentimento do titular, cumprimento de obrigação legal, administração pública, estudos por órgão de pesquisa, execução de contrato, processo judicial, administrativo ou arbitral, proteção da vida, tutela da saúde, interesse legítimo e proteção de crédito.
+
+
+Obrigações dos Controladores e Encarregado
+
+O controlador de direito público ou privado é obrigado a indicar um Encarregado de dados pessoais. Esse profissional pode ser pessoa natural ou jurídica, interna ou externa à organização. Suas atividades incluem aceitar reclamações e comunicações dos titulares, prestar esclarecimentos, receber comunicações da autoridade nacional, orientar funcionários e contratados sobre práticas de proteção de dados, e atuar como canal entre o controlador, os titulares e a Autoridade Nacional de Proteção de Dados.
+
+Para assegurar o cumprimento da lei, as empresas devem definir medidas preventivas de segurança, adotar boas certificações do mercado, realizar auditorias, elaborar planos de contingência e apresentar resoluções ágeis perante incidentes. No caso de vazamento de dados, a empresa deverá imediatamente informar a ANPD e os titulares afetados.
+
+
+Sanções Administrativas
+
+As sanções administrativas para descumprimento da LGPD estão previstas no artigo 52. São elas:
+
+Advertência com indicação de prazo para adoção de medidas corretivas. Multa simples de até 2% do faturamento líquido da pessoa jurídica no Brasil no último exercício, limitada a 50 milhões de reais por infração. Multa diária. Publicização da infração após devidamente apurada e confirmada. Bloqueio dos dados pessoais envolvidos na infração até sua regularização. Eliminação dos dados pessoais envolvidos na infração. Suspensão parcial do funcionamento do banco de dados pelo período máximo de seis meses, prorrogável por igual período. Suspensão do exercício da atividade de tratamento pelo período máximo de seis meses, prorrogável por igual período. Proibição parcial ou total do exercício de atividades relacionadas a tratamento de dados.
+
+
+Proteção de Dados como Direito Fundamental
+
+Em 2022, o Congresso Nacional promulgou a Emenda Constitucional 115, que inclui a proteção de dados pessoais entre os direitos e garantias fundamentais, fixando também a competência privativa da União para legislar sobre proteção e tratamento de dados pessoais. O artigo 5º da Constituição Federal passou a conter o inciso LXXIX, nos seguintes termos: é assegurado, nos termos da lei, o direito à proteção dos dados pessoais, inclusive nos meios digitais.

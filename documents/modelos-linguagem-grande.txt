@@ -1,0 +1,39 @@
+Modelos de Linguagem de Grande Escala
+
+Um grande modelo de linguagem é um modelo computacional projetado para executar tarefas de processamento de linguagem natural, especialmente a geração de linguagem, utilizando relações contextuais obtidas de um vasto conjunto de dados de treinamento. Esses modelos conseguem gerar, resumir, traduzir e analisar texto em diversos contextos e formam a base tecnológica dos chatbots modernos.
+
+Os LLMs conseguem imitar com precisão os padrões da linguagem natural porque são treinados em coleções de texto produzido por humanos. Contudo, dados de treinamento enviesados ou imprecisos podem tornar os resultados menos confiáveis. A partir de 2024, os LLMs mais avançados utilizam arquiteturas transformer, que podem ser mais eficientes e paralelizáveis comparadas aos modelos estatísticos e redes neurais recorrentes anteriores.
+
+Desenvolvimento Histórico
+
+Antes do surgimento dos transformers em 2017, alguns modelos de linguagem eram considerados grandes dentro das limitações computacionais de suas épocas. No início dos anos 1990, modelos estatísticos foram pioneiros em técnicas de alinhamento de palavras para tradução automática. Em 2001, modelos de n-gramas já alcançavam o estado da arte em medidas de desempenho.
+
+Durante os anos 2000, com o acesso expandido à internet, pesquisadores compilaram conjuntos de dados textuais massivos da web para treinar modelos estatísticos. A transição para redes neurais começou em 2000, e após avanços em redes neurais profundas para classificação de imagens por volta de 2012, arquiteturas similares foram adaptadas para tarefas linguísticas.
+
+O Google introduziu a arquitetura transformer em 2017, melhorando a tecnologia sequência-para-sequência anterior. Em 2018, o BERT foi apresentado e rapidamente se tornou ubíquo. O GPT-2 de 2019 atraiu atenção considerável, enquanto o GPT-3 em 2020 estabeleceu novas capacidades. O ChatGPT em 2022 recebeu cobertura mediática ampla, demonstrando a viabilidade comercial dos LLMs.
+
+Arquitetura e Componentes
+
+Os LLMs utilizam a arquitetura transformer, que implementa um mecanismo de atenção permitindo que o modelo processe relacionamentos entre todos os elementos de uma sequência simultaneamente. O mecanismo de atenção calcula pesos para determinar quais tokens são relevantes uns para os outros dentro da janela de contexto.
+
+Modelos autorregressivos, como os GPTs, são treinados para prever como uma sequência continua. Modelos mascarados, como o BERT, treinam para adivinhar partes faltando em uma sequência. Uma abordagem moderna envolve "mistura de especialistas," onde múltiplas redes neurais especializadas trabalham juntas com um mecanismo de seleção que direciona cada entrada aos especialistas mais apropriados.
+
+Treinamento e Custo
+
+Um LLM é um tipo de modelo fundacional treinado em linguagem. Os modelos GPT são primeiramente pré-treinados para prever a próxima palavra usando grandes quantidades de dados, antes de passarem por ajuste fino. Uma infraestrutura substancial é necessária para treinar os maiores modelos. O treinamento do GPT-2 custou aproximadamente 50 mil dólares em 2019, enquanto o PaLM custou 8 milhões de dólares em 2022.
+
+O ajuste fino molda o comportamento do LLM através de técnicas como aprendizado por reforço com feedback humano ou inteligência artificial constitucional. O ajuste fino de instruções ensina os LLMs a seguirem instruções do usuário, como demonstrado com o InstructGPT.
+
+Capacidades e Extensões
+
+Os LLMs foram estendidos com várias técnicas para melhorar suas capacidades. A engenharia de prompt permite adaptar LLMs a qualquer tarefa sem exigir ajuste fino. A geração aumentada por recuperação integra LLMs com sistemas de recuperação de documentos para fornecer respostas baseadas em documentos relevantes.
+
+O uso de ferramentas permite que LLMs interajam com sistemas externos, APIs ou fontes de dados. Agentes construídos a partir de LLMs podem planejar e executar ações em ambientes. O raciocínio foi melhorado através do encadeamento de pensamentos, onde modelos geram etapas intermediárias antes de fornecer respostas finais.
+
+Propriedades e Habilidades
+
+O desempenho de um LLM depende do custo computacional de pré-treinamento, do tamanho da rede neural e do tamanho do conjunto de dados de treinamento. Leis de escala preveem o desempenho baseado nesses fatores. Modelos maiores adquirem "habilidades emergentes" que não estão explicitamente programadas, como aprender a partir de demonstrações e realizar raciocínio em contexto.
+
+Questões de Interpretação
+
+Pesquisadores dividem-se sobre se LLMs realmente "compreendem" a linguagem natural. Alguns argumentam que habilidades como raciocínio matemático implicam compreensão genuína. Outros sustentam que modelos simplesmente remixam texto existente. Um desafio significativo é o fenômeno das "alucinações," onde modelos geram informações factualmente incorretas com confiança aparente.
