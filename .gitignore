@@ -253,3 +253,6 @@ $RECYCLE.BIN/
 
 # SAM local env vars (não versionar)
 env.json
+
+# Claude Code configurações locais (não versionar)
+.claude/settings.local.json
