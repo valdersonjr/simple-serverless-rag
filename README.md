@@ -1,122 +1,168 @@
-# Beginner-friendly guide — what this project is and how to use it
+# Simple Serverless RAG
 
-## Project idea (vision)
+RAG (Retrieval-Augmented Generation) serverless usando OpenSearch para busca vetorial e Gemini/Bedrock para geração de respostas.
 
-For the original project vision/spec and the planned flows, see `project_idea.md`.
+## Como funciona
 
-## Proposed (abstract) architecture
+Dois modos de uso: **local** (para desenvolver e testar) e **AWS** (produção serverless).
 
-![Abstract architecture proposal](assets/abstract-architecture.png)
+### Arquitetura geral
 
-## Status
+![Arquitetura abstrata](assets/abstract-architecture.png)
 
-- **Flow 1 (Ingestion)**: ✅ implemented (API Gateway → Lambda → SQS → Worker → Bedrock embeddings → OpenSearch Serverless)
-- **Flow 2 (Query/RAG)**: 🚧 in progress (chat endpoint + retrieval + LLM answer)
+### Fluxo de ingestão
 
-## What this project does (in 1 minute)
+1. Um documento de texto é enviado ao sistema
+2. O texto é dividido em **chunks** (pedaços menores)
+3. Cada chunk vira um **embedding** (vetor numérico que representa o significado do texto)
+4. Os chunks + vetores são armazenados no **OpenSearch**
 
-This project is a **RAG** (Retrieval‑Augmented Generation). In simple terms:
+### Fluxo de busca (RAG)
 
-- You **send a text/document** to the system.
-- The system **splits the text into smaller pieces** (“chunks”).
-- It turns each piece into a big “number list” (a **vector**, called an **embedding**) that represents the meaning of the text.
-- Those chunks + vectors are stored in a “smart search database” (**OpenSearch Serverless**).
+1. O usuário faz uma pergunta no chat
+2. A pergunta vira um embedding
+3. O OpenSearch encontra os chunks semanticamente mais próximos
+4. O LLM (Gemini ou Claude via Bedrock) gera uma resposta baseada nesses chunks
+5. A resposta é exibida junto com as fontes usadas
 
-Later (Flow 2, still in progress), you would ask questions and the system would search the most relevant chunks to answer based on them.
-
----
-
-## How Flow 1 works (step by step)
-
-When you call `POST /ingest`:
-
-1) **API Gateway** receives the HTTP request.
-2) The **`IngestFunction`** Lambda validates the JSON and places a message into a queue (**SQS**).
-3) The queue (**SQS**) stores the work and retries automatically. If it fails too many times, it goes to the **DLQ**.
-4) The **`IngestWorkerFunction`** Lambda reads the message and processes it:
-   - splits the text into chunks
-   - generates embeddings via **Bedrock**
-   - writes into **OpenSearch Serverless (AOSS)**
-
-That’s why `/ingest` responds quickly with **`status: enqueued`** (the rest happens in the background).
+![Chat funcionando](assets/chat-funcionando.png)
 
 ---
 
-## “Each part” (what each thing is)
+## Rodando localmente
 
-- **API Gateway**: the HTTP “front door” (`/ingest`).
-- **`IngestFunction` Lambda**: receives the request and **enqueues** it (does not do the heavy work).
-- **SQS (queue)**: async processing queue.
-- **DLQ**: “error queue” (messages that failed multiple times).
-- **`IngestWorkerFunction` Lambda**: does the heavy work (chunk + embedding + indexing).
-- **Bedrock**: AWS service that generates embeddings.
-- **OpenSearch Serverless (AOSS)**: stores the chunks and embeddings for search.
+### Pré-requisitos
 
----
+- Docker
+- Python 3.12+
+- Chave da API do Gemini (`GEMINI_API_KEY`) em `.env`
 
-## How to use it (AWS — simplest way)
+### 1. Configurar o ambiente
 
-You need to have deployed the stack and have the **`IngestApiUrl`** output.
-
-### 1) Ingest a text file
-
-Example using a simple Lorem Ipsum text:
+Copie o arquivo de exemplo e preencha as variáveis:
 
 ```bash
-curl -X POST "<IngestApiUrl>" \
-  -H "content-type: application/json" \
-  -d '{
-    "doc_id": "lorem-ipsum",
-    "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-    "chunk_size": 200,
-    "persist": true
-  }'
+cp .env.example .env
+# edite .env e coloque sua GEMINI_API_KEY
 ```
 
-Expected response (example):
-
-- `status: enqueued`
-- `message_id`: the SQS message id
-
-### 2) Check if the worker processed it
+### 2. Instalar dependências
 
 ```bash
-sam logs -n IngestWorkerFunction --stack-name simple-serveless-rag --tail --profile rag-test --region us-east-1
+make install
 ```
 
-If you see an error, it’s usually AOSS/Bedrock permissions or configuration.
+Cria o `.venv` e instala todas as dependências (OpenSearch, fastembed, Streamlit, etc).
+
+### 3. Subir a infraestrutura local
+
+```bash
+make local-up
+```
+
+Sobe o OpenSearch (porta 9200) e o ElasticMQ (porta 9324) via Docker.
+
+### 4. Ingestar documentos
+
+```bash
+make ingest FILES="documents/*.txt"
+```
+
+Suporta `.txt` e `.md`. Para um arquivo só:
+
+```bash
+make ingest FILES="documents/meu-arquivo.txt"
+```
+
+O `doc_id` é o nome do arquivo sem extensão. Re-ingestar o mesmo arquivo substitui os chunks anteriores.
+
+### 5. Rodar o chat
+
+```bash
+make ui
+```
+
+Abre o chat em [http://localhost:8501](http://localhost:8501).
 
 ---
 
-## Proof it works (screenshots)
+## Variáveis de ambiente (`.env`)
 
-### Deployment outputs (API + queues)
-
-![CloudFormation outputs (IngestApiUrl, QueueUrl, DLQUrl)](assets/deploy.png)
-
-### Worker processing logs (no errors)
-
-![IngestWorkerFunction logs (START/END/REPORT)](assets/queue-log.png)
-
-### Vector DB has documents (OpenSearch `_count`)
-
-![OpenSearch Serverless index count (_count > 0)](assets/chunk-count-vdb.png)
-
----
-
-## What does “it worked” mean?
-
-You know Flow 1 is working when:
-
-- `POST /ingest` returns `status: enqueued`
-- the worker does not keep failing/retrying
-- you can confirm there are documents in the index (e.g. `_count > 0`)
+| Variável | Descrição | Padrão |
+|---|---|---|
+| `GEMINI_API_KEY` | Chave da API do Gemini | obrigatório |
+| `GEMINI_MODEL_ID` | Modelo Gemini a usar | `gemini-2.5-flash-lite` |
+| `OPENSEARCH_ENDPOINT` | Endpoint do OpenSearch | `http://localhost:9200` |
+| `OPENSEARCH_INDEX` | Nome do índice | `rag_chunks_local` |
+| `OPENSEARCH_AUTH` | Modo de auth (`local` ou `sigv4`) | `local` |
+| `EMBEDDING_PROVIDER` | Provider de embeddings (`fastembed`, `local`, `bedrock`, `mock`) | `fastembed` |
+| `EMBEDDING_DIM` | Dimensão dos vetores | `384` |
+| `LLM_PROVIDER` | Provider do LLM (`gemini` ou `mock`) | `gemini` |
 
 ---
 
-## Common issues (simple explanations)
+## Comandos disponíveis
 
-- **Queue does not exist** (`NonExistentQueue`): the system is trying to use a queue that wasn’t created/deployed, or the queue URL is wrong.
-- **AOSS 403**: the Lambda is not allowed to access OpenSearch Serverless (you need a Data Access Policy allowing the role).
-- **SSL error in local Python**: your Python doesn’t trust the certificate; you can fix it with `certifi` (when running local commands).
+```bash
+make install                         # cria .venv e instala dependências
+make local-up                        # sobe OpenSearch + ElasticMQ
+make local-down                      # derruba os containers
+make ingest FILES="documents/*.txt"  # indexa documentos
+make ui                              # abre o chat
+make test                            # roda os testes unitários
+make lint                            # verifica o código com ruff
+make format                          # formata o código com ruff
+```
 
+---
+
+## Providers de embedding
+
+| Provider | Quando usar |
+|---|---|
+| `fastembed` | Local, sem cloud, semântica real (recomendado para dev) |
+| `local` | `sentence-transformers` local, requer PyTorch |
+| `bedrock` | AWS Bedrock (Titan Embeddings), requer credenciais AWS |
+| `mock` | Vetores aleatórios, só para testar o encanamento |
+
+O modelo padrão do `fastembed` é `BAAI/bge-small-en-v1.5` (~67MB, baixado automaticamente na primeira execução).
+
+---
+
+## Estrutura do projeto
+
+```
+.
+├── ask/              # Lambda: recebe pergunta, busca chunks, gera resposta
+├── ingest/           # Lambda: recebe documento e enfileira no SQS
+├── ingest_worker/    # Lambda: processa fila, gera embeddings e indexa
+├── query/            # Lambda: busca vetorial sem geração de resposta
+├── shared/           # Layer compartilhado: OpenSearch client + embeddings
+├── ui/               # Chat Streamlit (interface local)
+├── script/           # Scripts utilitários (ingestão local de arquivos)
+├── documents/        # Documentos de exemplo para ingestar
+├── tests/            # Testes unitários e de integração
+├── template.yaml     # SAM template (deploy AWS)
+└── docker-compose.yml
+```
+
+---
+
+## Deploy AWS (produção)
+
+O projeto é serverless via AWS SAM: API Gateway + Lambda + SQS + OpenSearch Serverless (AOSS) + Bedrock.
+
+```bash
+make build
+make deploy
+```
+
+Na AWS, os embeddings são gerados pelo **Bedrock Titan Embeddings V2** e o LLM é o **Claude via Bedrock**.
+
+Para usar o deploy AWS, configure `OPENSEARCH_AUTH=sigv4` e aponte `OPENSEARCH_ENDPOINT` para o endpoint AOSS.
+
+### Evidências do deploy
+
+![CloudFormation outputs](assets/deploy.png)
+![Logs do worker](assets/queue-log.png)
+![Contagem de documentos no OpenSearch](assets/chunk-count-vdb.png)
