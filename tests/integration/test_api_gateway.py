@@ -12,8 +12,8 @@ Make sure env variable AWS_SAM_STACK_NAME exists with the name of the stack we a
 class TestApiGateway:
 
     @pytest.fixture()
-    def api_gateway_url(self):
-        """ Get the API Gateway URL from Cloudformation Stack outputs """
+    def ingest_url(self):
+        """Get the Ingest endpoint URL from CloudFormation Stack outputs."""
         stack_name = os.environ.get("AWS_SAM_STACK_NAME")
 
         if stack_name is None:
@@ -30,16 +30,22 @@ class TestApiGateway:
 
         stacks = response["Stacks"]
         stack_outputs = stacks[0]["Outputs"]
-        api_outputs = [output for output in stack_outputs if output["OutputKey"] == "HelloWorldApi"]
+        api_outputs = [output for output in stack_outputs if output["OutputKey"] == "IngestApiUrl"]
 
         if not api_outputs:
-            raise KeyError(f"HelloWorldAPI not found in stack {stack_name}")
+            raise KeyError(f"IngestApiUrl not found in stack {stack_name}")
 
         return api_outputs[0]["OutputValue"]  # Extract url from stack outputs
 
-    def test_api_gateway(self, api_gateway_url):
-        """ Call the API Gateway endpoint and check the response """
-        response = requests.get(api_gateway_url)
+    def test_api_gateway(self, ingest_url):
+        """Call the API Gateway ingest endpoint and check that it enqueues."""
+        response = requests.post(
+            ingest_url,
+            json={"doc_id": "test-doc", "text": "hello", "chunk_size": 5, "persist": False},
+            timeout=20,
+        )
 
-        assert response.status_code == 200
-        assert response.json() == {"message": "hello world"}
+        assert response.status_code == 202
+        body = response.json()
+        assert body["status"] == "enqueued"
+        assert body["doc_id"] == "test-doc"
