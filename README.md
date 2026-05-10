@@ -1,168 +1,168 @@
 # Simple Serverless RAG
 
-RAG (Retrieval-Augmented Generation) serverless usando OpenSearch para busca vetorial e Gemini/Bedrock para geração de respostas.
+A serverless RAG (Retrieval-Augmented Generation) system using OpenSearch for vector search and Claude/Gemini for answer generation.
 
-## Como funciona
+## How it works
 
-Dois modos de uso: **local** (para desenvolver e testar) e **AWS** (produção serverless).
+Two modes: **local** (develop and test) and **AWS** (production serverless).
 
-### Arquitetura geral
+### Architecture
 
-![Arquitetura abstrata](assets/abstract-architecture.png)
+![Abstract architecture](assets/abstract-architecture.png)
 
-### Fluxo de ingestão
+### Ingestion flow
 
-1. Um documento de texto é enviado ao sistema
-2. O texto é dividido em **chunks** (pedaços menores)
-3. Cada chunk vira um **embedding** (vetor numérico que representa o significado do texto)
-4. Os chunks + vetores são armazenados no **OpenSearch**
+1. A text document is sent to the system
+2. The text is split into **chunks**
+3. Each chunk becomes an **embedding** (a numeric vector representing the text's meaning)
+4. Chunks + vectors are stored in **OpenSearch**
 
-### Fluxo de busca (RAG)
+### Query flow (RAG)
 
-1. O usuário faz uma pergunta no chat
-2. A pergunta vira um embedding
-3. O OpenSearch encontra os chunks semanticamente mais próximos
-4. O LLM (Gemini ou Claude via Bedrock) gera uma resposta baseada nesses chunks
-5. A resposta é exibida junto com as fontes usadas
+1. The user asks a question in the chat
+2. The question is converted to an embedding
+3. OpenSearch finds the semantically closest chunks
+4. The LLM (Claude via Bedrock or Gemini) generates an answer based on those chunks
+5. The answer is displayed together with the sources used
 
-![Chat funcionando](assets/chat-funcionando.png)
+![Chat working](assets/chat-funcionando.png)
 
 ---
 
-## Rodando localmente
+## Running locally
 
-### Pré-requisitos
+### Prerequisites
 
 - Docker
 - Python 3.12+
-- Chave da API do Gemini (`GEMINI_API_KEY`) em `.env`
+- Gemini API key (`GEMINI_API_KEY`) in `.env`
 
-### 1. Configurar o ambiente
+### 1. Configure the environment
 
-Copie o arquivo de exemplo e preencha as variáveis:
+Copy the example file and fill in the variables:
 
 ```bash
 cp .env.example .env
-# edite .env e coloque sua GEMINI_API_KEY
+# edit .env and set your GEMINI_API_KEY
 ```
 
-### 2. Instalar dependências
+### 2. Install dependencies
 
 ```bash
 make install
 ```
 
-Cria o `.venv` e instala todas as dependências (OpenSearch, fastembed, Streamlit, etc).
+Creates the `.venv` and installs all dependencies (OpenSearch, fastembed, Streamlit, etc.).
 
-### 3. Subir a infraestrutura local
+### 3. Start local infrastructure
 
 ```bash
 make local-up
 ```
 
-Sobe o OpenSearch (porta 9200) e o ElasticMQ (porta 9324) via Docker.
+Starts OpenSearch (port 9200) and ElasticMQ (port 9324) via Docker.
 
-### 4. Ingestar documentos
+### 4. Ingest documents
 
 ```bash
 make ingest FILES="documents/*.txt"
 ```
 
-Suporta `.txt` e `.md`. Para um arquivo só:
+Supports `.txt` and `.md`. For a single file:
 
 ```bash
-make ingest FILES="documents/meu-arquivo.txt"
+make ingest FILES="documents/my-file.txt"
 ```
 
-O `doc_id` é o nome do arquivo sem extensão. Re-ingestar o mesmo arquivo substitui os chunks anteriores.
+The `doc_id` is the filename without extension. Re-ingesting the same file replaces previous chunks.
 
-### 5. Rodar o chat
+### 5. Run the chat
 
 ```bash
 make ui
 ```
 
-Abre o chat em [http://localhost:8501](http://localhost:8501).
+Opens the chat at [http://localhost:8501](http://localhost:8501).
 
 ---
 
-## Variáveis de ambiente (`.env`)
+## Environment variables (`.env`)
 
-| Variável | Descrição | Padrão |
+| Variable | Description | Default |
 |---|---|---|
-| `GEMINI_API_KEY` | Chave da API do Gemini | obrigatório |
-| `GEMINI_MODEL_ID` | Modelo Gemini a usar | `gemini-2.5-flash-lite` |
-| `OPENSEARCH_ENDPOINT` | Endpoint do OpenSearch | `http://localhost:9200` |
-| `OPENSEARCH_INDEX` | Nome do índice | `rag_chunks_local` |
-| `OPENSEARCH_AUTH` | Modo de auth (`local` ou `sigv4`) | `local` |
-| `EMBEDDING_PROVIDER` | Provider de embeddings (`fastembed`, `local`, `bedrock`, `mock`) | `fastembed` |
-| `EMBEDDING_DIM` | Dimensão dos vetores | `384` |
-| `LLM_PROVIDER` | Provider do LLM (`gemini` ou `mock`) | `gemini` |
+| `GEMINI_API_KEY` | Gemini API key | required |
+| `GEMINI_MODEL_ID` | Gemini model to use | `gemini-2.5-flash-lite` |
+| `OPENSEARCH_ENDPOINT` | OpenSearch endpoint | `http://localhost:9200` |
+| `OPENSEARCH_INDEX` | Index name | `rag_chunks_local` |
+| `OPENSEARCH_AUTH` | Auth mode (`local` or `sigv4`) | `local` |
+| `EMBEDDING_PROVIDER` | Embedding provider (`fastembed`, `local`, `bedrock`, `mock`) | `fastembed` |
+| `EMBEDDING_DIM` | Vector dimension | `384` |
+| `LLM_PROVIDER` | LLM provider (`gemini`, `bedrock`, or `mock`) | `bedrock` |
 
 ---
 
-## Comandos disponíveis
+## Available commands
 
 ```bash
-make install                         # cria .venv e instala dependências
-make local-up                        # sobe OpenSearch + ElasticMQ
-make local-down                      # derruba os containers
-make ingest FILES="documents/*.txt"  # indexa documentos
-make ui                              # abre o chat
-make test                            # roda os testes unitários
-make lint                            # verifica o código com ruff
-make format                          # formata o código com ruff
+make install                         # create .venv and install dependencies
+make local-up                        # start OpenSearch + ElasticMQ
+make local-down                      # stop containers
+make ingest FILES="documents/*.txt"  # index documents
+make ui                              # open the chat
+make test                            # run unit tests
+make lint                            # check code with ruff
+make format                          # format code with ruff
 ```
 
 ---
 
-## Providers de embedding
+## Embedding providers
 
-| Provider | Quando usar |
+| Provider | When to use |
 |---|---|
-| `fastembed` | Local, sem cloud, semântica real (recomendado para dev) |
-| `local` | `sentence-transformers` local, requer PyTorch |
-| `bedrock` | AWS Bedrock (Titan Embeddings), requer credenciais AWS |
-| `mock` | Vetores aleatórios, só para testar o encanamento |
+| `fastembed` | Local, no cloud, real semantics (recommended for dev) |
+| `local` | Local `sentence-transformers`, requires PyTorch |
+| `bedrock` | AWS Bedrock (Titan Embeddings), requires AWS credentials |
+| `mock` | Deterministic random vectors, for testing the pipeline only |
 
-O modelo padrão do `fastembed` é `BAAI/bge-small-en-v1.5` (~67MB, baixado automaticamente na primeira execução).
+The default `fastembed` model is `BAAI/bge-small-en-v1.5` (~67MB, downloaded automatically on first run).
 
 ---
 
-## Estrutura do projeto
+## Project structure
 
 ```
 .
-├── ask/              # Lambda: recebe pergunta, busca chunks, gera resposta
-├── ingest/           # Lambda: recebe documento e enfileira no SQS
-├── ingest_worker/    # Lambda: processa fila, gera embeddings e indexa
-├── query/            # Lambda: busca vetorial sem geração de resposta
-├── shared/           # Layer compartilhado: OpenSearch client + embeddings
-├── ui/               # Chat Streamlit (interface local)
-├── script/           # Scripts utilitários (ingestão local de arquivos)
-├── documents/        # Documentos de exemplo para ingestar
-├── tests/            # Testes unitários e de integração
-├── template.yaml     # SAM template (deploy AWS)
+├── ask/              # Lambda: receives question, searches chunks, generates answer
+├── ingest/           # Lambda: receives document and enqueues to SQS
+├── ingest_worker/    # Lambda: processes queue, generates embeddings and indexes
+├── query/            # Lambda: vector search without answer generation
+├── shared/           # Shared layer: OpenSearch client + embeddings
+├── ui/               # Streamlit chat (local interface)
+├── script/           # Utility scripts (local file ingestion)
+├── documents/        # Sample documents to ingest
+├── tests/            # Unit and integration tests
+├── template.yaml     # SAM template (AWS deploy)
 └── docker-compose.yml
 ```
 
 ---
 
-## Deploy AWS (produção)
+## AWS deploy (production)
 
-O projeto é serverless via AWS SAM: API Gateway + Lambda + SQS + OpenSearch Serverless (AOSS) + Bedrock.
+The project is serverless via AWS SAM: API Gateway + Lambda + SQS + OpenSearch Serverless (AOSS) + Bedrock.
 
 ```bash
 make build
 make deploy
 ```
 
-Na AWS, os embeddings são gerados pelo **Bedrock Titan Embeddings V2** e o LLM é o **Claude via Bedrock**.
+On AWS, embeddings are generated by **Bedrock Titan Embeddings V2** and answers by **Claude via Bedrock**.
 
-Para usar o deploy AWS, configure `OPENSEARCH_AUTH=sigv4` e aponte `OPENSEARCH_ENDPOINT` para o endpoint AOSS.
+To use the AWS deploy, set `OPENSEARCH_AUTH=sigv4` and point `OPENSEARCH_ENDPOINT` to the AOSS endpoint.
 
-### Evidências do deploy
+### Deploy evidence
 
 ![CloudFormation outputs](assets/deploy.png)
-![Logs do worker](assets/queue-log.png)
-![Contagem de documentos no OpenSearch](assets/chunk-count-vdb.png)
+![Worker logs](assets/queue-log.png)
+![Document count in OpenSearch](assets/chunk-count-vdb.png)
